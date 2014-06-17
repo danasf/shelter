@@ -5,13 +5,17 @@ import feedparser
 import argparse
 import os.path
 import hashlib
+import smtplib
 from termcolor import colored, cprint
+from email.mime.text import MIMEText
+
 
 # grab the craigslist feed
 def getFeed(args):
 	tmp = getHashes()
 	old_links = tmp.split("\n")
 	new_links = []
+	new_ads = []
 	#if hood.len > 1: 
 	#	url = "https://%s.craigslist.org/search/%s/%s?query=%s&sale_date=&maxAsk=%i&format=rss" % (args.city, args.hood, args.type, args.keywords, args.max_amt)
 	#else:
@@ -24,14 +28,26 @@ def getFeed(args):
 		cprint("Fetching new ads ...",'green')
 		setLastMod(feed.modified)
 		for item in feed.entries:
-			#
+			
+		# if cmd line mode
 			i = hashlib.md5(item.link).hexdigest();
-			if doesMatch(i,old_links):
+			if isNewAd(i,old_links):					
 				text=colored('New Ad!','red',attrs=['blink'])
-				print "%s date: %s title: %s, url: %s" % (text,item.date,item.title,item.link)
+				out= "%s date: %s title: %s, url: %s" % (text,item.date,item.title,item.link)
+				print out
+				new_ads.append(i)
+
 			else:
 				cprint("Old Ad title: %s, url: %s" % (item.title,item.link),'grey')
+			
 			new_links.append(i)
+		#if email mode
+			try: 
+				if args.email:
+					sendMsg(new_ads,args.email)
+			except Exception, e:
+				print e
+				continue
 
 		#print 'old links', old_links
 		#print 'new links', new_links
@@ -44,6 +60,8 @@ def setupArgs():
 	parser.add_argument('--neighborhood',dest='hood',type=str,default='',help="Your neighborhood")
 	parser.add_argument('--type',dest='type',type=str,default='sub',help="Type of listing to search for, defaults to sublet")
 	parser.add_argument('--max',dest='max_amt',type=int,help="Maximum amount you want to pay")
+	parser.add_argument('--email',dest='email',default=False,type=str,help="Send as email")
+
 	return parser.parse_args()
 
 
@@ -73,7 +91,7 @@ def writeHashes(data):
 	f = open('hashes','w')
 	f.write(data)
 
-def doesMatch(item,hashes):
+def isNewAd(item,hashes):
 	for h in hashes:
 		if item == h:
 			return False
@@ -90,6 +108,16 @@ def intro():
 	cprint("+++++++++++++++++++++++++++++++++++++",'red')
 	print "\n"
 
+def sendMsg(body,to):
+	myBody = MIMEText("\n".join(body))
+	msg['Subject'] = 'New apartment ads'
+	msg['From'] = 'apartmentfairy@yourcomputer.null'
+	msg['To'] = to
+	# envelope header.
+	# python -m smtpd -n -c DebuggingServer localhost:1025
+	s = smtplib.SMTP('localhost',1025)
+	s.sendmail(msg['From'], to, myBody)
+	s.quit();
 
 def main():
 	intro()
