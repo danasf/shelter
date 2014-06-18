@@ -9,7 +9,6 @@ import smtplib
 from termcolor import colored, cprint
 from email.mime.text import MIMEText
 
-
 # grab the craigslist feed
 def getFeed(args):
 	tmp = getHashes()
@@ -33,7 +32,7 @@ def getFeed(args):
 			i = hashlib.md5(item.link).hexdigest();
 			if isNewAd(i,old_links):					
 				text=colored('New Ad!','red',attrs=['blink'])
-				out= "%s date: %s title: %s, url: %s" % (text,item.date,item.title,item.link)
+				out= "%s title: %s, url: %s" % (text,item.title,item.link)
 				print out
 				new_ads.append(i)
 
@@ -49,18 +48,17 @@ def getFeed(args):
 				print e
 				continue
 
-		#print 'old links', old_links
-		#print 'new links', new_links
 		writeHashes("\n".join(sorted(new_links)))
 # setup args
 def setupArgs():
 	parser = argparse.ArgumentParser(description='Find some housing on Craigslist!');
 	parser.add_argument('--search',dest='keywords',type=str,default='',help="Keywords you'd like to search for")
 	parser.add_argument('--city',dest='city',type=str,default='nyc',help="City to search in, defaults to NYC. See CL for abbreviations")
-	parser.add_argument('--neighborhood',dest='hood',type=str,default='',help="Your neighborhood")
+	parser.add_argument('--neighborhood',dest='hood',type=str,default='',help="Limit search to neighborhood (not yet implemented)")
 	parser.add_argument('--type',dest='type',type=str,default='sub',help="Type of listing to search for, defaults to sublet")
+	parser.add_argument('--new',dest='max_amt',type=bool,default=True,help="Defaults to True")
 	parser.add_argument('--max',dest='max_amt',type=int,help="Maximum amount you want to pay")
-	parser.add_argument('--email',dest='email',default=False,type=str,help="Send as email")
+	parser.add_argument('--email',dest='email',type=str,default=False,help="Send as email (not yet implemented)")
 
 	return parser.parse_args()
 
@@ -98,6 +96,7 @@ def isNewAd(item,hashes):
 	return True	
 
 def intro():
+	# font shimrod, via http://www.kammerl.de/ascii/AsciiSignature.php
 	print "\n"
 	cprint("+++++++++++++++++++++++++++++++++++++",'red')
 	cprint(" ,-.  .  . ,--. ,    ,---. ,--. ,-. ",'blue')
@@ -108,6 +107,7 @@ def intro():
 	cprint("+++++++++++++++++++++++++++++++++++++",'red')
 	print "\n"
 
+# not yet implemented
 def sendMsg(body,to):
 	myBody = MIMEText("\n".join(body))
 	msg['Subject'] = 'New apartment ads'
